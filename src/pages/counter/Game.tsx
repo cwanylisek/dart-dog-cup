@@ -19,6 +19,20 @@ interface Flash {
   tone: 'bust' | 'max' | 'leg'
 }
 
+/** How long the finished turn stays on screen before the next player takes over. */
+const HOLD_MS = 5000
+const BOT_HOLD_MS = 2000
+const HISTORY = 3
+
+interface HeldTurn {
+  id: number
+  player: number
+  darts: Dart[]
+  points: number
+  bust: boolean
+  duration: number
+}
+
 function allTurns(s: MatchState): Turn[] {
   return s.legs.flatMap((l) => l.turns)
 }
@@ -33,8 +47,15 @@ export function Game({ config, darts }: { config: MatchConfig; darts: Dart[] }) 
   const players = useData((s) => s.snapshot.players)
   const [flash, setFlash] = useState<Flash | null>(null)
   const flashId = useRef(0)
+  const [held, setHeld] = useState<HeldTurn | null>(null)
+  const holdId = useRef(0)
+  const holdTimer = useRef<number | null>(null)
 
   useWakeLock(wakeLock)
+
+  useEffect(() => () => {
+    if (holdTimer.current !== null) window.clearTimeout(holdTimer.current)
+  }, [])
 
   const state = useMemo(() => replay(config, darts), [config, darts])
   const dartsLeft = 3 - state.currentTurn.length
@@ -60,6 +81,17 @@ export function Game({ config, darts }: { config: MatchConfig; darts: Dart[] }) 
     const name = config.players[turn.player].name
     const legWon = after.legs.length > before.legs.length || after.winner !== null
     const lines: string[] = []
+
+    // Hold a normal finished turn on screen so the player can read it before the switch.
+    if (!legWon) {
+      const duration = config.players[after.currentPlayer]?.bot !== undefined ? BOT_HOLD_MS : HOLD_MS
+      if (holdTimer.current !== null) window.clearTimeout(holdTimer.current)
+      setHeld({ id: ++holdId.current, player: turn.player, darts: turn.darts, points: turn.points, bust: turn.bust, duration })
+      holdTimer.current = window.setTimeout(() => {
+        setHeld(null)
+        holdTimer.current = null
+      }, duration)
+    }
 
     if (after.winner !== null) {
       lines.push(t('voice.match'))
@@ -92,13 +124,13 @@ export function Game({ config, darts }: { config: MatchConfig; darts: Dart[] }) 
   onDartRef.current = onDart
 
   useEffect(() => {
-    if (!botTurn || bot === undefined) return
+    if (!botTurn || bot === undefined || held !== null) return
     const timer = window.setTimeout(() => {
       onDartRef.current(nextDart(bot, state.scores[state.currentPlayer], dartsLeft, Math.random))
     }, 750)
     return () => window.clearTimeout(timer)
     // Re-schedules one dart at a time; the deps change after every throw.
-  }, [botTurn, bot, state.currentPlayer, state.currentTurn.length, state.scores[state.currentPlayer], dartsLeft])
+  }, [botTurn, bot, held, state.currentPlayer, state.currentTurn.length, state.scores[state.currentPlayer], dartsLeft])
 
   const multiPlayer = config.players.length > 1
 
@@ -107,7 +139,11 @@ export function Game({ config, darts }: { config: MatchConfig; darts: Dart[] }) 
       {/* Scoreboard */}
       <div className={`grid shrink-0 gap-2.5 ${multiPlayer ? 'grid-cols-2' : 'grid-cols-1'}`}>
         {config.players.map((p, i) => {
-          const active = i === state.currentPlayer
+          const active = (held?.player ?? state.currentPlayer) === i
+          const history = (state.legs.at(-1)?.turns ?? [])
+            .filter((turn) => turn.player === i)
+            .flatMap((turn) => turn.darts)
+            .slice(-HISTORY)
           return (
             <motion.div
               key={i}
@@ -127,11 +163,27 @@ export function Game({ config, darts }: { config: MatchConfig; darts: Dart[] }) 
               <div className="tabular relative mt-1 text-[56px] leading-none font-extrabold tracking-tight">
                 {state.scores[i]}
               </div>
-              <div className="relative mt-2 flex justify-between text-xs text-muted">
+              <div className="relative mt-1.5 flex min-h-[22px] flex-wrap items-center gap-1">
+                {history.map((d, j) => (
+                  <span
+                    key={j}
+                    className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
+                      d.mult === 3
+                        ? 'bg-accent-soft text-accent'
+                        : d.mult === 2
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-surface-2 text-muted'
+                    } ${j === history.length - 1 ? 'ring-1 ring-accent/40' : ''}`}
+                  >
+                    {dartLabel(d)}
+                  </span>
+                ))}
+              </div>
+              <div className="relative mt-1.5 flex justify-between text-xs text-muted">
                 <span>
                   {t('counter.avg')} <b className="tabular text-text">{average(state.stats[i]).toFixed(1)}</b>
                 </span>
-                {active && <span className="font-semibold text-accent">{t('counter.toThrow')}</span>}
+                {active && !held && <span className="font-semibold text-accent">{t('counter.toThrow')}</span>}
               </div>
             </motion.div>
           )
@@ -142,7 +194,7 @@ export function Game({ config, darts }: { config: MatchConfig; darts: Dart[] }) 
       <div className="shrink-0 rounded-3xl border border-line bg-surface p-3">
         <div className="flex items-center gap-2">
           {[0, 1, 2].map((i) => {
-            const d = state.currentTurn[i]
+            const d = (held?.darts ?? state.currentTurn)[i]
             return (
               <div
                 key={i}
@@ -154,9 +206,25 @@ export function Game({ config, darts }: { config: MatchConfig; darts: Dart[] }) 
               </div>
             )
           })}
-          <div className="tabular w-14 text-right text-2xl font-extrabold">{turnTotal}</div>
+          <div className={`tabular w-14 text-right text-2xl font-extrabold ${held?.bust ? 'text-danger' : ''}`}>
+            {held ? held.points : turnTotal}
+          </div>
         </div>
-        {botTurn ? (
+        {held ? (
+          <div className="mt-2.5 flex min-h-7 items-center gap-2 text-sm">
+            <span className="text-muted">{t('counter.next')}</span>
+            <span className="min-w-0 truncate font-semibold">{config.players[state.currentPlayer].name}</span>
+            <div className="ml-auto h-1 w-24 overflow-hidden rounded-full bg-surface-2">
+              <motion.div
+                key={held.id}
+                className="h-full bg-accent"
+                initial={{ width: '100%' }}
+                animate={{ width: '0%' }}
+                transition={{ duration: held.duration / 1000, ease: 'linear' }}
+              />
+            </div>
+          </div>
+        ) : botTurn ? (
           <div className="mt-2.5 flex min-h-7 items-center gap-2 text-sm font-semibold text-accent">
             <motion.span
               className="h-2 w-2 rounded-full bg-accent"
@@ -194,9 +262,9 @@ export function Game({ config, darts }: { config: MatchConfig; darts: Dart[] }) 
         <Keypad
           onDart={onDart}
           onUndo={undo}
-          canUndo={!botTurn && darts.length > 0}
+          canUndo={!botTurn && !held && darts.length > 0}
           hint={hint}
-          disabled={state.winner !== null || botTurn}
+          disabled={state.winner !== null || botTurn || held !== null}
         />
       </div>
 

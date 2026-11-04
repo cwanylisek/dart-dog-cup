@@ -70,6 +70,7 @@ const en = {
     quitConfirm: 'Quit this game? Progress will be lost.',
     turnTotal: 'Turn',
     toThrow: 'to throw',
+    next: 'Next',
     bot: {
       title: 'Play a bot',
       easy: 'Easy',

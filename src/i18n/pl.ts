@@ -72,6 +72,7 @@ const pl: Messages = {
     quitConfirm: 'Zakończyć tę grę? Postęp zostanie utracony.',
     turnTotal: 'Kolejka',
     toThrow: 'rzuca',
+    next: 'Następny',
     bot: {
       title: 'Zagraj z botem',
       easy: 'Łatwy',
