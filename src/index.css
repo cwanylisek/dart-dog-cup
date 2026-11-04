@@ -1,0 +1,101 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #eceff5;
+  --surface-3: #e1e5ee;
+  --text: #0e1220;
+  --muted: #687089;
+  --line: rgba(14, 18, 32, 0.08);
+  --accent: #1a92c9;
+  --accent-strong: #127ab0;
+  --accent-soft: rgba(26, 146, 201, 0.12);
+  --danger: #e5484d;
+  --success: #18a46b;
+  --shadow: 0 1px 2px rgba(14, 18, 32, 0.04), 0 8px 24px rgba(14, 18, 32, 0.06);
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #0a0b10;
+  --surface: #14161f;
+  --surface-2: #1c1f2b;
+  --surface-3: #262a39;
+  --text: #f2f4f9;
+  --muted: #8a91a8;
+  --line: rgba(255, 255, 255, 0.07);
+  --accent: #1a92c9;
+  --accent-strong: #3aa9dc;
+  --accent-soft: rgba(26, 146, 201, 0.18);
+  --danger: #f2555a;
+  --success: #2fc285;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --shadow-card: var(--shadow);
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+button {
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+select {
+  font-size: 16px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
