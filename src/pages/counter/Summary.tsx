@@ -105,7 +105,7 @@ export function Summary({ config, darts }: { config: MatchConfig; darts: Dart[] 
           <span />
           {config.players.map((p, i) => (
             <span key={i} className="flex w-24 flex-col items-center gap-1 text-center text-xs font-semibold">
-              <Avatar name={p.name} color={colorOf(p.playerId)} size={28} />
+              <Avatar name={p.name} color={colorOf(p.playerId)} bot={Boolean(p.bot)} size={28} />
               <span className="w-full truncate">{p.name}</span>
             </span>
           ))}

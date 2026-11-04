@@ -28,6 +28,7 @@ const pl: Messages = {
     back: 'Wstecz',
     vs: 'vs',
     guest: 'Gość',
+    bot: 'Bot',
     loading: 'Ładowanie…',
     error: 'Coś poszło nie tak',
     saved: 'Zapisano',
@@ -71,6 +72,14 @@ const pl: Messages = {
     quitConfirm: 'Zakończyć tę grę? Postęp zostanie utracony.',
     turnTotal: 'Kolejka',
     toThrow: 'rzuca',
+    bot: {
+      title: 'Zagraj z botem',
+      easy: 'Łatwy',
+      medium: 'Średni',
+      hard: 'Trudny',
+      average: 'śr. {{min}}–{{max}}',
+      throwing: 'Bot rzuca…',
+    },
   },
   summary: {
     title: 'Koniec meczu',

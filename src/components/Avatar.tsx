@@ -1,3 +1,5 @@
+import { BotIcon } from './Icons'
+
 export const PLAYER_COLORS = [
   '#1a92c9',
   '#7c5cff',
@@ -18,8 +20,10 @@ export function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-export function Avatar({ name, color, size = 36 }: { name: string; color?: string; size?: number }) {
-  const c = color ?? '#64748b'
+export const BOT_COLOR = '#7c5cff'
+
+export function Avatar({ name, color, size = 36, bot = false }: { name: string; color?: string; size?: number; bot?: boolean }) {
+  const c = color ?? (bot ? BOT_COLOR : '#64748b')
   return (
     <span
       className="inline-flex shrink-0 items-center justify-center rounded-full font-bold"
@@ -31,7 +35,7 @@ export function Avatar({ name, color, size = 36 }: { name: string; color?: strin
         color: c,
       }}
     >
-      {initials(name)}
+      {bot ? <BotIcon size={size * 0.62} /> : initials(name)}
     </span>
   )
 }

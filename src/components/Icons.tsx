@@ -117,3 +117,13 @@ export const CalendarIcon = (p: IconProps) => (
     <path d="M3.5 10h17M8 3v4M16 3v4" />
   </svg>
 )
+export const BotIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="5" y="8.5" width="14" height="10.5" rx="3.5" />
+    <path d="M12 8.5V5.5" />
+    <circle cx="12" cy="4" r="1.1" fill="currentColor" stroke="none" />
+    <path d="M2.5 12v3.5M21.5 12v3.5" />
+    <circle cx="9.5" cy="13" r="1.1" fill="currentColor" stroke="none" />
+    <circle cx="14.5" cy="13" r="1.1" fill="currentColor" stroke="none" />
+  </svg>
+)

@@ -1,11 +1,19 @@
+import type { BotLevel } from './bot'
 import { dartPoints, isDouble, type Dart } from './darts'
+
+export interface MatchPlayer {
+  playerId: string | null
+  name: string
+  /** Set when this slot is played by the bot engine. */
+  bot?: BotLevel
+}
 
 export interface MatchConfig {
   startScore: number
   legsToWin: number
   /** 1 means sets are off: the first player to win `legsToWin` legs wins the match. */
   setsToWin: number
-  players: { playerId: string | null; name: string }[]
+  players: MatchPlayer[]
 }
 
 export interface Turn {

@@ -7,6 +7,7 @@ import { Card, SectionTitle } from '../../components/Card'
 import { Segmented, Stepper } from '../../components/Controls'
 import { CloseIcon, PlayIcon, PlusIcon, SwapIcon } from '../../components/Icons'
 import { Sheet } from '../../components/Sheet'
+import { BOT_AVERAGE, BOT_LEVELS, type BotLevel } from '../../engine/bot'
 import type { MatchConfig } from '../../engine/x01'
 import { useData } from '../../store/data'
 import { useGame } from '../../store/game'
@@ -48,6 +49,9 @@ export function Setup() {
     setPicker(false)
     setGuest('')
   }
+
+  const botName = (level: BotLevel) => `${t('common.bot')} · ${t(`counter.bot.${level}`)}`
+  const addBot = (level: BotLevel) => add({ playerId: null, name: botName(level), bot: level })
 
   const begin = () => {
     const config: MatchConfig = { startScore, legsToWin, setsToWin, players: slots }
@@ -112,11 +116,20 @@ export function Setup() {
         {slots.map((s, i) => (
           <motion.div layout key={`${s.playerId ?? s.name}`}>
             <Card className="flex items-center gap-3 px-4 py-3">
-              <Avatar name={s.name} color={colorOf(s.playerId)} size={40} />
+              <Avatar name={s.name} color={colorOf(s.playerId)} bot={Boolean(s.bot)} size={40} />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-semibold">{s.name}</div>
                 <div className="text-[13px] text-muted">
-                  {[i === 0 ? t('counter.throwsFirst') : null, s.playerId ? null : t('common.guest')].filter(Boolean).join(' · ')}
+                  {[
+                    i === 0 ? t('counter.throwsFirst') : null,
+                    s.bot
+                      ? t('counter.bot.average', { min: BOT_AVERAGE[s.bot][0], max: BOT_AVERAGE[s.bot][1] })
+                      : s.playerId
+                        ? null
+                        : t('common.guest'),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </div>
               </div>
               <button
@@ -150,7 +163,7 @@ export function Setup() {
 
       <Sheet open={picker} onClose={() => setPicker(false)} title={t('counter.pickPlayer')}>
         {available.length > 0 && (
-          <div className="mb-4 grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {available.map((p) => (
               <button
                 key={p.id}
@@ -163,8 +176,31 @@ export function Setup() {
             ))}
           </div>
         )}
+
+        <div className={available.length > 0 ? 'mt-5' : ''}>
+          <div className="mb-2 px-1 text-[13px] font-semibold tracking-wider text-muted uppercase">{t('counter.bot.title')}</div>
+          <div className="flex flex-col gap-2">
+            {BOT_LEVELS.map((level) => (
+              <button
+                key={level}
+                onClick={() => addBot(level)}
+                className="flex items-center gap-3 rounded-2xl bg-surface-2 px-3 py-2.5 text-left active:bg-surface-3"
+              >
+                <Avatar name={botName(level)} bot size={32} />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold">{botName(level)}</div>
+                  <div className="text-[12px] text-muted">
+                    {t('counter.bot.average', { min: BOT_AVERAGE[level][0], max: BOT_AVERAGE[level][1] })}
+                  </div>
+                </div>
+                <PlusIcon size={18} className="text-accent" />
+              </button>
+            ))}
+          </div>
+        </div>
+
         <form
-          className="flex gap-2"
+          className="mt-5 flex gap-2"
           onSubmit={(e) => {
             e.preventDefault()
             if (guest.trim()) add({ playerId: null, name: guest.trim() })

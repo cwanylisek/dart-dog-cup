@@ -26,6 +26,7 @@ const en = {
     back: 'Back',
     vs: 'vs',
     guest: 'Guest',
+    bot: 'Bot',
     loading: 'Loading…',
     error: 'Something went wrong',
     saved: 'Saved',
@@ -69,6 +70,14 @@ const en = {
     quitConfirm: 'Quit this game? Progress will be lost.',
     turnTotal: 'Turn',
     toThrow: 'to throw',
+    bot: {
+      title: 'Play a bot',
+      easy: 'Easy',
+      medium: 'Medium',
+      hard: 'Hard',
+      average: 'avg {{min}}–{{max}}',
+      throwing: 'Bot is throwing…',
+    },
   },
   summary: {
     title: 'Match finished',

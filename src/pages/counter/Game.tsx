@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Avatar } from '../../components/Avatar'
+import { nextDart } from '../../engine/bot'
 import { canCheckout, suggest } from '../../engine/checkout'
 import { dartLabel, type Dart } from '../../engine/darts'
 import { average, replay, type MatchConfig, type MatchState, type Turn } from '../../engine/x01'
@@ -84,6 +85,21 @@ export function Game({ config, darts }: { config: MatchConfig; darts: Dart[] }) 
     if (voice) speak(lines, language)
   }
 
+  // Bot turns play themselves: keep the handler in a ref so the timer always calls the latest one.
+  const bot = config.players[state.currentPlayer]?.bot
+  const botTurn = bot !== undefined && state.winner === null
+  const onDartRef = useRef(onDart)
+  onDartRef.current = onDart
+
+  useEffect(() => {
+    if (!botTurn || bot === undefined) return
+    const timer = window.setTimeout(() => {
+      onDartRef.current(nextDart(bot, state.scores[state.currentPlayer], dartsLeft, Math.random))
+    }, 750)
+    return () => window.clearTimeout(timer)
+    // Re-schedules one dart at a time; the deps change after every throw.
+  }, [botTurn, bot, state.currentPlayer, state.currentTurn.length, state.scores[state.currentPlayer], dartsLeft])
+
   const multiPlayer = config.players.length > 1
 
   return (
@@ -102,7 +118,7 @@ export function Game({ config, darts }: { config: MatchConfig; darts: Dart[] }) 
             >
               {active && <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/12 to-transparent" />}
               <div className="relative flex items-center gap-2">
-                <Avatar name={p.name} color={colorOf(p.playerId)} size={26} />
+                <Avatar name={p.name} color={colorOf(p.playerId)} bot={Boolean(p.bot)} size={26} />
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold">{p.name}</span>
                 <span className="tabular rounded-full bg-surface-2 px-2 py-0.5 text-xs font-bold">
                   {config.setsToWin > 1 ? `${state.setsWon[i]}·${state.legsInSet[i]}` : state.totalLegsWon[i]}
@@ -140,26 +156,37 @@ export function Game({ config, darts }: { config: MatchConfig; darts: Dart[] }) 
           })}
           <div className="tabular w-14 text-right text-2xl font-extrabold">{turnTotal}</div>
         </div>
-        <div className="mt-2.5 flex min-h-7 items-center gap-2 text-sm">
-          {suggestion.kind === 'checkout' && (
-            <>
-              <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-white uppercase">{t('counter.checkout')}</span>
-              <span className="tabular font-bold">{suggestion.darts.map(dartLabel).join(' · ')}</span>
-            </>
-          )}
-          {suggestion.kind === 'setup' && remaining <= 230 && (
-            <>
-              <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-bold text-muted uppercase">{t('counter.setup')}</span>
-              <span className="tabular font-bold">{suggestion.darts.map(dartLabel).join(' · ')}</span>
-              <span className="text-muted">→ {t('counter.leave', { score: suggestion.leave })}</span>
-            </>
-          )}
-          {suggestion.kind === 'setup' && remaining > 230 && (
-            <span className="text-muted">
-              {t('counter.darts')}: <b className="tabular text-text">{dartsLeft}</b>
-            </span>
-          )}
-        </div>
+        {botTurn ? (
+          <div className="mt-2.5 flex min-h-7 items-center gap-2 text-sm font-semibold text-accent">
+            <motion.span
+              className="h-2 w-2 rounded-full bg-accent"
+              animate={{ opacity: [0.35, 1, 0.35] }}
+              transition={{ repeat: Infinity, duration: 1.1 }}
+            />
+            {t('counter.bot.throwing')}
+          </div>
+        ) : (
+          <div className="mt-2.5 flex min-h-7 items-center gap-2 text-sm">
+            {suggestion.kind === 'checkout' && (
+              <>
+                <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-white uppercase">{t('counter.checkout')}</span>
+                <span className="tabular font-bold">{suggestion.darts.map(dartLabel).join(' · ')}</span>
+              </>
+            )}
+            {suggestion.kind === 'setup' && remaining <= 230 && (
+              <>
+                <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-bold text-muted uppercase">{t('counter.setup')}</span>
+                <span className="tabular font-bold">{suggestion.darts.map(dartLabel).join(' · ')}</span>
+                <span className="text-muted">→ {t('counter.leave', { score: suggestion.leave })}</span>
+              </>
+            )}
+            {suggestion.kind === 'setup' && remaining > 230 && (
+              <span className="text-muted">
+                {t('counter.darts')}: <b className="tabular text-text">{dartsLeft}</b>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Keypad */}
@@ -167,9 +194,9 @@ export function Game({ config, darts }: { config: MatchConfig; darts: Dart[] }) 
         <Keypad
           onDart={onDart}
           onUndo={undo}
-          canUndo={darts.length > 0}
+          canUndo={!botTurn && darts.length > 0}
           hint={hint}
-          disabled={state.winner !== null}
+          disabled={state.winner !== null || botTurn}
         />
       </div>
 
